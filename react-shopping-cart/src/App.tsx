@@ -1,6 +1,7 @@
 import {useState} from 'react'
 import {useQuery} from 'react-query';
 import Item from './Item/Item';
+import Cart from './Cart/Cart';
 import Drawer from '@mui/material/Drawer';
 import LinearProgress from '@mui/material/LinearProgress';
 import Grid from '@mui/material/Grid';
@@ -33,12 +34,38 @@ const App = () => {
   console.log(data);
 
   const getTotalItems = (items: CartItemType[]) => {
-    
+   return items.reduce((ack: number, item) => ack + item.amount, 0)
   };
 
-  const handleartItem = (clickedItem: CartItemType) => null;
+  const handleAddToCart = (clickedItem: CartItemType) => {
+    console.log('cartItem')
+    setCartItems(prev => {
+      //if item is already there in the cart
+      const isItemInCart = prev.find(item => item.id === clickedItem.id);
+      if (isItemInCart) {
+        return prev.map(item => (
+          item.id === clickedItem.id
+            ? {...item, amount: item.amount + 1}
+            : item 
+          ))
+      }
+//first time the item is added
+      return [...prev, {...clickedItem, amount:1}]
+    })
+  };
 
-  const handleRemoveFromCart = () => null;
+  const handleRemoveFromCart = (id: number) => {
+    setCartItems(prev =>
+      prev.reduce((ack, item) => {
+        if (item.id === id) {
+          if (item.amount === 1) return ack;
+          return [...ack, { ...item, amount: item.amount - 1 }];
+        } else {
+          return [...ack, item];
+        }
+      }, [] as CartItemType[])
+    );
+  };
 
   if (isLoading) return <LinearProgress />
   if (error) return <div>Something went wrong...</div>
@@ -46,17 +73,17 @@ const App = () => {
   return (
     <Wrapper>
       <Drawer anchor="right" open={cartOpen} onClose={() => setCartOpen(false)}>
-        Cart goes here
+        <Cart cartItems={cartItems} addToCart={handleAddToCart} removeFromCart={handleRemoveFromCart} />
       </Drawer>
       <StyledButton onClick={() => setCartOpen(true)}>
-        <Badge badgeContent={getTotalItems(cartItems)} >
+        <Badge badgeContent={getTotalItems(cartItems)} color='secondary' >
           <AddShoppingCart />
         </Badge>
       </StyledButton>
            <Grid container spacing={3}>
             {data?.map(item => (
               <Grid item key={item.id} xs={12} sm={4}>
-                <Item item={item} handleAddToCart={handleartItem}/>
+                <Item item={item} handleAddToCart={handleAddToCart}/>
                 </Grid>
             ))}
            </Grid>
